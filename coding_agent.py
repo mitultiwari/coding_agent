@@ -137,12 +137,21 @@ def extract_tool_invocations(text: str) -> List[Tuple[str, Dict[str, Any]]]:
     return invocations
 
 def execute_llm_call(conversation: List[Dict[str, str]]) -> str:
-    response = openai_client.responses.create(
+    """Stream the model's reply to stdout as it arrives and return the full text."""
+    print(f"{ASSISTANT_COLOR}Assistant{RESET_COLOR}: ", end="", flush=True)
+    stream = openai_client.responses.create(
         model="gpt-5.6-terra",
         input=conversation,
         max_output_tokens=5000,
+        stream=True,
     )
-    return response.output_text
+    chunks: List[str] = []
+    for event in stream:
+        if event.type == "response.output_text.delta":
+            print(event.delta, end="", flush=True)
+            chunks.append(event.delta)
+    print()
+    return "".join(chunks)
 
 def run_coding_agent_loop():
     conversation = [{
@@ -162,13 +171,11 @@ def run_coding_agent_loop():
             assistant_resp = execute_llm_call(conversation)
             tool_invocations = extract_tool_invocations(assistant_resp)
             if not tool_invocations:
-                print(f"{ASSISTANT_COLOR}Assistant{RESET_COLOR}: {assistant_resp}")
                 conversation.append({
                     "role": "assistant",
                     "content": assistant_resp
                 })
                 break
-            print(f"{ASSISTANT_COLOR}Assistant{RESET_COLOR}: {assistant_resp}")
             conversation.append({
                 "role": "assistant",
                 "content": assistant_resp
