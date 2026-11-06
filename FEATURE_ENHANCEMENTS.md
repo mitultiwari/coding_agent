@@ -45,6 +45,34 @@ The agent currently crashes or stops early in common situations. Fix these first
 - [ ] **Add environment details to the system prompt:** working directory, OS and date.
 - [ ] **Load project instructions** from an `AGENTS.md` file in the working directory when one exists.
 
+## P2: Three-column web UI
+
+A browser interface alongside the terminal one:
+
+```
+┌──────────────┬───────────────────────────┬──────────────────────┐
+│ Chats        │ Conversation              │ Code artifacts       │
+│              │                           │                      │
+│ + New chat   │ You: add a test for ...   │ ▸ tests/test_edit.py │
+│ ▸ Streaming  │ Assistant: I'll read ...  │ ▸ coding_agent.py    │
+│   Tool fixes │   → read_file(...)        │ ┌──────────────────┐ │
+│   Add tests  │   → edit_file(...)        │ │ diff / file view │ │
+│              │ Assistant: Done. ...      │ └──────────────────┘ │
+│              │ [ message input       ⏎ ] │                      │
+└──────────────┴───────────────────────────┴──────────────────────┘
+```
+
+- [ ] **Left: chat list.** Start a new chat, switch between chats, rename and delete them. Each chat keeps its own conversation history.
+- [ ] **Middle: conversation.** Stream replies as they arrive (the agent already streams). Show tool calls as compact, expandable steps instead of raw `tool:` lines. Message input at the bottom.
+- [ ] **Right: code artifacts.** List every file the agent read, created or edited in the current chat. Clicking one shows its contents with syntax highlighting, or a diff for edits. Clicking a tool step in the conversation opens the matching artifact.
+
+Prerequisites:
+
+- [ ] **Separate the agent from the terminal.** Move the loop into a function that takes a conversation and yields events (text delta, tool call, tool result, done) instead of calling `input()` and `print()`. The terminal and web UI then both use it.
+- [ ] **Save chats.** Store each chat's messages and artifacts (e.g. SQLite or one JSON file per chat) so they survive a restart.
+- [ ] **Record artifacts.** Have `read_file` and `edit_file` return enough for the UI to display: file path, content, and the before/after text for edits.
+- [ ] **Server.** A small backend (e.g. FastAPI) that streams agent events to the browser over Server-Sent Events or a WebSocket.
+
 ## P3: Developer experience
 
 - [ ] **Configurable model.** Read the model name from an env var (e.g. `AGENT_MODEL`) with a default, instead of hard-coding it (line 143).
@@ -65,4 +93,5 @@ The agent currently crashes or stops early in common situations. Fix these first
 2. `run_command` and `search`: the largest jump in what the agent can do.
 3. Safer edits, so it's reasonable to give the agent a shell.
 4. Native function calling and context management.
-5. Developer experience items as time allows.
+5. Three-column web UI. Separate the agent from the terminal first, then add saved chats, then the server and UI.
+6. Developer experience items as time allows.
